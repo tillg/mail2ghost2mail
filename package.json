@@ -1,0 +1,48 @@
+{
+	"name": "mail2ghost2mail",
+	"version": "0.0.1",
+	"description": "Interfacing Ghost with Emails: Sending out emails when new posts are published and creating new posts by sending emails.",
+	"main": "app.js",
+	"scripts": {
+		"start": "node src/index.js",
+		"test": "mocha test --exit",
+		"lint": "eslint .",
+		"lint:write": "eslint --fix .",
+		"prettier": "prettier --list-different './**/*.js'",
+		"prettier:write": "prettier --write './**/*.js'"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/tillg/mail2ghost2mail.git"
+	},
+	"keywords": [
+		"ghost",
+		"cms",
+		"integration",
+		"email",
+		"automation"
+	],
+	"author": "Till Gartner",
+	"license": "ISC",
+	"bugs": {
+		"url": "https://github.com/tillg/mail2ghost2mail/issues"
+	},
+	"homepage": "https://github.com/tillg/mail2ghost2mail#readme",
+	"dependencies": {
+		"chalk": "3.0.0",
+		"debug": "4.1.1",
+		"dotenv": "8.2.0",
+		"express": "4.17.1",
+		"nodemon": "2.0.2",
+		"prettier": "1.19.1",
+		"winston": "3.2.1"
+	},
+	"devDependencies": {
+		"eslint": "6.8.0",
+		"eslint-config-airbnb-base": "14.0.0",
+		"eslint-config-prettier": "6.10.0",
+		"eslint-plugin-import": "2.20.1",
+		"eslint-plugin-prettier": "3.1.2",
+		"mocha": "7.1.0"
+	}
+}
