@@ -1,11 +1,14 @@
+require('dotenv').config();
+
 const express = require('express');
 const http = require('http');
 const bodyParser = require('body-parser');
 const path = require('path');
 const chalk = require('chalk');
 const logger = require('./config/logger')('app:index');
+const read3mails = require('./services/imapIn');
 
-require('dotenv').config();
+read3mails();
 
 const app = express();
 
