@@ -6,7 +6,9 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const chalk = require('chalk');
 const logger = require('./config/logger')('app:index');
-const processUnseenEmails = require('./services/imapIn');
+//const processUnseenEmails = require('./services/getAttachements');
+const processUnseenEmails = require('./services/imapIn-simple');
+//const processUnseenEmails = require('./services/loadMessage');
 
 processUnseenEmails();
 
@@ -46,7 +48,7 @@ app.use((err, req, res) => {
 server.listen(process.env.PORT, () => {
 	logger.info(
 		chalk.bgGreen.black(
-			`Server up & running & listening at port ${process.env.PORT} (Note: That might be within a docker container!)`
+			`Server up & running on http://localhost:${process.env.PORT} (Note: That might be within a docker container!)`
 		)
 	);
 });
