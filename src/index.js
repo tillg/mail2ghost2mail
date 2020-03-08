@@ -6,9 +6,9 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const chalk = require('chalk');
 const logger = require('./config/logger')('app:index');
-const read3mails = require('./services/imapIn');
+const processUnseenEmails = require('./services/imapIn');
 
-read3mails();
+processUnseenEmails();
 
 const app = express();
 

@@ -13,60 +13,92 @@ const imap = new Imap({
 	}
 });
 
-get3mails = () => {
-	function openInbox(cb) {
-		imap.openBox('INBOX', true, cb);
-	}
-	logger.info('Starting to get emails...');
-	console.log(imap);
+processEmailObject = mail => {
+	logger.info(
+		`processEmailObject: #${mail.seqno ? mail.seqno : 'Unknown'}\n  From: ${
+			mail.header.from
+		} \n  Subject: ${mail.header.subject} \n  ${mail.header.date}`
+	);
+};
+
+processEmailStream = emailStream => {
+	let body = '';
+	let header;
+	let attributes;
+	let seqno;
+
+	emailStream.on('body', function(stream, info) {
+		logger.info(`processEmailStream: #${info.seqno}`);
+		seqno = info.seqno;
+		stream.on('data', function(chunk) {
+			body += chunk.toString('utf8');
+		});
+		stream.once('end', function() {
+			header = Imap.parseHeader(body);
+			// console.log(
+			// 	prefix + 'Parsed header: %s',
+			// 	inspect(Imap.parseHeader(body))
+			// );
+		});
+	});
+	emailStream.once('attributes', function(attrs) {
+		attributes = inspect(attrs, false, 8);
+		//console.log(prefix + 'Attributes: %s', inspect(attrs, false, 8));
+	});
+	emailStream.once('end', function() {
+		const emailObject = {
+			body,
+			header,
+			attributes,
+			seqno
+		};
+		processEmailObject(emailObject);
+		logger.info(`processEmailStream: #${seqno}: Finished `);
+	});
+};
+
+function openInbox(cb) {
+	imap.openBox('INBOX', true, cb);
+}
+
+processUnseenEmails = () => {
+	logger.info(
+		`processUnseenEmails: Connecting to IMAP Server ${process.env.IMAP_HOST} for user ${process.env.IMAP_USER}...`
+	);
 	imap.once('ready', function() {
+		logger.info(
+			`processUnseenEmails: Connected to IMAP Server ${process.env.IMAP_HOST} for user ${process.env.IMAP_USER}.`
+		);
 		openInbox(function(err, box) {
 			if (err) throw err;
-			var f = imap.seq.fetch('1:3', {
-				bodies: 'HEADER.FIELDS (FROM TO SUBJECT DATE)',
-				struct: true
-			});
-			f.on('message', function(msg, seqno) {
-				console.log('Message #%d', seqno);
-				var prefix = '(#' + seqno + ') ';
-				msg.on('body', function(stream, info) {
-					var buffer = '';
-					stream.on('data', function(chunk) {
-						buffer += chunk.toString('utf8');
-					});
-					stream.once('end', function() {
-						console.log(
-							prefix + 'Parsed header: %s',
-							inspect(Imap.parseHeader(buffer))
-						);
-					});
+			logger.info(`processUnseenEmails: Open box: ${box.name}`);
+			imap.search(['UNSEEN'], function(err, results) {
+				if (err) throw err;
+				logger.info(`Length of results: ${results.length}`);
+				var f = imap.fetch(results, { bodies: '' });
+				f.on('message', function(msg, seqno) {
+					processEmailStream(msg);
 				});
-				msg.once('attributes', function(attrs) {
-					console.log(prefix + 'Attributes: %s', inspect(attrs, false, 8));
+				f.once('error', function(err) {
+					logger.error(`processUnseenEmails: Fetch error: ${err}`);
 				});
-				msg.once('end', function() {
-					console.log(prefix + 'Finished');
+				f.once('end', function() {
+					logger.info(`processUnseenEmails: Done fetching all messages`);
+					imap.end();
 				});
-			});
-			f.once('error', function(err) {
-				console.log('Fetch error: ' + err);
-			});
-			f.once('end', function() {
-				console.log('Done fetching all messages!');
-				imap.end();
 			});
 		});
 	});
 
 	imap.once('error', function(err) {
-		console.log(err);
+		logger.error(`processUnseenEmails: ${err}`);
 	});
 
 	imap.once('end', function() {
-		console.log('Connection ended');
+		logger.info(`processUnseenEmails: Connection ended`);
 	});
 
 	imap.connect();
 };
 
-module.exports = get3mails;
+module.exports = processUnseenEmails;
