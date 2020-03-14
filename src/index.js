@@ -10,7 +10,12 @@ const logger = require('./config/logger')('app:index');
 const processUnseenEmails = require('./services/imapIn-simple');
 //const processUnseenEmails = require('./services/loadMessage');
 
-processUnseenEmails();
+const { showPosts, listAuthors } = require('./services/ghostPlayground');
+
+//processUnseenEmails();
+
+showPosts();
+listAuthors();
 
 const app = express();
 

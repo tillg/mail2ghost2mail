@@ -2,6 +2,7 @@ const logger = require('../config/logger')('app:imapIn-simple');
 const imaps = require('imap-simple');
 const inspect = require('util').inspect;
 const fs = require('fs');
+const simpleParser = require('mailparser').simpleParser;
 
 const config = {
 	imap: {
@@ -41,31 +42,44 @@ processUnseenEmails = () => {
 					}, typeof: ${typeof messages}, keys: ${Object.keys(messages)}`
 				);
 				messages.forEach(message => {
-					const subject = message.parts.filter(function(part) {
-						return part.which === 'HEADER';
-					})[0].body.subject[0];
-					const parts = imaps.getParts(message.attributes.struct);
-					Object.keys(parts).forEach(key => {
-						const part = parts[key];
-						const dispoType = part.disposition && part.disposition.type;
-						logger.info(
-							`processUnseenEmails: ${subject}: Part[${key}]  partId: ${part.partID}, type/subtype: ${part.type}/${part.subtype}, disposition type: ${dispoType}`
-						);
-						let attachment;
-						if (dispoType === 'ATTACHMENT') {
-							connection.getPartData(message, part).then(function(partData) {
-								attachment = {
-									filename: part.disposition.params.filename,
-									data: partData
-								};
-								logger.info(`processUnseenEmails: ${subject}: attachment`);
-								console.log(attachment);
-							});
-						}
-					});
+					processMessageMessageParser(message, connection);
 				});
 			});
 	});
 };
 
+processMessageMessageParser = message => {
+	const options = {};
+	simpleParser(message, options)
+		.then(parsed => {
+			logger.info(`processMessageMessageParser: ${parsed}`);
+		})
+		.catch(err => {
+			logger.error(`processMessageMessageParser: ${err}`);
+		});
+};
+processMessage = (message, connection) => {
+	const subject = message.parts.filter(function(part) {
+		return part.which === 'HEADER';
+	})[0].body.subject[0];
+	const parts = imaps.getParts(message.attributes.struct);
+	Object.keys(parts).forEach(key => {
+		const part = parts[key];
+		const dispoType = part.disposition && part.disposition.type;
+		logger.info(
+			`processUnseenEmails: ${subject}: Part[${key}]  partId: ${part.partID}, type/subtype: ${part.type}/${part.subtype}, disposition type: ${dispoType}`
+		);
+		let attachment;
+		if (dispoType === 'ATTACHMENT') {
+			connection.getPartData(message, part).then(function(partData) {
+				attachment = {
+					filename: part.disposition.params.filename,
+					data: partData
+				};
+				logger.info(`processUnseenEmails: ${subject}: attachment`);
+				console.log(attachment);
+			});
+		}
+	});
+};
 module.exports = processUnseenEmails;
