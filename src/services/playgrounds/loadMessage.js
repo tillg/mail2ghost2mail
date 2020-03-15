@@ -1,4 +1,4 @@
-const logger = require('../config/logger')('app:loadMessage');
+const logger = require('../../config/logger')('app:loadMessage');
 const Imap = require('imap');
 const inspect = require('util').inspect;
 const fs = require('fs');

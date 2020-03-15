@@ -6,16 +6,15 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const chalk = require('chalk');
 const logger = require('./config/logger')('app:index');
-//const processUnseenEmails = require('./services/getAttachements');
-const processUnseenEmails = require('./services/imapIn-simple');
-//const processUnseenEmails = require('./services/loadMessage');
 
-const { showPosts, listAuthors } = require('./services/ghostPlayground');
+const { processUnreadMails } = require('./mail2postController');
 
 //processUnseenEmails();
+//listHtml();
+processUnreadMails();
 
-showPosts();
-listAuthors();
+//showPosts();
+//listAuthors();
 
 const app = express();
 
@@ -49,7 +48,7 @@ app.use((err, req, res) => {
 	res.status(status).send({ status, error: 'Server error' });
 });
 
-// start server
+/* start server
 server.listen(process.env.PORT, () => {
 	logger.info(
 		chalk.bgGreen.black(
@@ -57,5 +56,6 @@ server.listen(process.env.PORT, () => {
 		)
 	);
 });
+*/
 
 logger.info('Index.js finished!');

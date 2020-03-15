@@ -48,7 +48,7 @@ processUnseenEmails = () => {
 	});
 };
 
-processMessageMessageParser = message => {
+const processMessageMessageParser = message => {
 	const options = {};
 	simpleParser(message, options)
 		.then(parsed => {
