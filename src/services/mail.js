@@ -19,8 +19,8 @@ const config = {
 };
 
 const getUnreadMails = () => {
-	return imaps.connect(config).then(function(connection) {
-		return connection.openBox('INBOX').then(function() {
+	return imaps.connect(config).then(connection => {
+		return connection.openBox('INBOX').then(() => {
 			const searchCriteria = ['UNSEEN'];
 			const fetchOptions = {
 				bodies: ['HEADER', 'TEXT', '']
@@ -28,14 +28,35 @@ const getUnreadMails = () => {
 			return connection.search(searchCriteria, fetchOptions).then(rawMails => {
 				let mailsPromises = [];
 				rawMails.forEach(function(item) {
-					var all = _.find(item.parts, { which: '' });
-					var id = item.attributes.uid;
-					var idHeader = 'Imap-Id: ' + id + '\r\n';
-					mailsPromises.push(simpleParser(idHeader + all.body));
+					const all = _.find(item.parts, { which: '' });
+					const uid = item.attributes.uid;
+					const idHeader = 'Imap-Id: ' + uid + '\r\n';
+					let mailPromise = simpleParser(idHeader + all.body).then(mail => {
+						return { ...mail, uid };
+					});
+
+					mailsPromises.push(mailPromise);
 				});
 				return Promise.all(mailsPromises);
 			});
 		});
 	});
 };
-module.exports = { getUnreadMails };
+
+const markMailAsRead = mail => {
+	logger.info(`markMailAsRead: Marking Mail as read: ${mail.subject}`);
+
+	return imaps
+		.connect(config)
+		.then(connection => {
+			return connection
+				.openBox('INBOX')
+				.then(() => connection.addFlags(mail.uid, 'SEEN'));
+		})
+		.catch(err => {
+			logger.error(`markMailAsRead: Error when marking mail as unread: ${err}`);
+			throw err;
+		});
+};
+
+module.exports = { getUnreadMails, markMailAsRead };
