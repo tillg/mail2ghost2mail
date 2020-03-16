@@ -8,13 +8,10 @@ const chalk = require('chalk');
 const logger = require('./config/logger')('app:index');
 
 const { processUnreadMails } = require('./mail2postController');
+const { getPosts, getAuthors } = require('./services/post');
 
-//processUnseenEmails();
-//listHtml();
+//getAuthors();
 processUnreadMails();
-
-//showPosts();
-//listAuthors();
 
 const app = express();
 

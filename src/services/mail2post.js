@@ -3,6 +3,7 @@ const transformToPost = mail => {
 		status: 'published',
 		published_at: mail.date,
 		title: mail.subject,
+		authors: [mail.from.value[0].address],
 		html: mail.html ? mail.html : mail.textAsHtml
 	};
 	return post;

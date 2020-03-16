@@ -14,7 +14,6 @@ const processUnreadMails = () => {
 				.then(() => markMailAsRead(mail))
 				.catch(err => {
 					logger.error(`processUnreadMails: Error when adding post: ${err}`);
-					throw err;
 				});
 		});
 	});

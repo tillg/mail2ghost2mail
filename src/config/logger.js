@@ -5,11 +5,6 @@ const winston = require('winston');
 
 const { createLogger } = winston;
 
-const fileTransport = new winston.transports.File({
-	level: 'error',
-	filename: 'mail2ghost2mail-errors.log'
-});
-
 const getLabelledFormatFunction = label => info =>
 	`${info.timestamp} ${info.level}${label ? ` ${label}` : ''}: ${info.message}`; //  ${JSON.stringify(info, null, 2)}
 const getLabelledWinstonFormat = label =>
@@ -18,7 +13,11 @@ const getLabelledWinstonFormat = label =>
 		winston.format.colorize(),
 		winston.format.printf(getLabelledFormatFunction(label))
 	);
-
+const getLabelledWinstonFormatWOcolor = label =>
+	winston.format.combine(
+		winston.format.timestamp(),
+		winston.format.printf(getLabelledFormatFunction(label))
+	);
 const getLabelledConsoleTransport = label =>
 	new winston.transports.Console({
 		level: 'debug',
@@ -28,9 +27,18 @@ const getLabelledConsoleTransport = label =>
 		format: getLabelledWinstonFormat(label)
 	});
 
+const getLabelledFileTransport = label =>
+	new winston.transports.File({
+		level: 'error',
+		filename: 'mail2ghost2mail-errors.log',
+		json: false,
+		colorize: false,
+		format: getLabelledWinstonFormatWOcolor(label)
+	});
+
 // Now we configure the default logger
 winston.add(getLabelledConsoleTransport());
-winston.add(fileTransport);
+winston.add(getLabelledFileTransport());
 winston.debug('Logger is configured.');
 
 /**
@@ -41,7 +49,7 @@ const getLabelledLogger = label => {
 	if (!label) return winston;
 	const newLogger = createLogger();
 	newLogger.add(getLabelledConsoleTransport(label));
-	newLogger.add(fileTransport);
+	newLogger.add(getLabelledFileTransport(label));
 	return newLogger;
 };
 
