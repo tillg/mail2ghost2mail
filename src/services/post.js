@@ -35,13 +35,15 @@ const getAuthors = () => {
 
 const addPost = post => {
 	// Check that post has a proper author
-	const validAuthors = config.get('validAuthors');
-	if (!validAuthors.includes(post.authors[0])) {
-		return Promise.reject(
-			`addPost: Author ${post.authors[0]} not valid, post will not be created.\n   Valid authors are ${validAuthors}`
-		);
+	const validAuthors = config
+		.get('validAuthors')
+		.map(email => email.toLowerCase());
+	const candidateAuthor = post.authors[0].toLowerCase();
+	if (!validAuthors.includes(candidateAuthor)) {
+		const errStr = `addPost: Author ${candidateAuthor} not valid, post will not be created.\n   Valid authors are ${validAuthors}`;
+		logger.error(errStr);
+		return Promise.reject(new Error(errStr));
 	}
-
 	return adminApi.posts.add(post, { source: 'html' });
 };
 
