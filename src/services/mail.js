@@ -4,6 +4,31 @@ const _ = require('lodash');
 const fs = require('fs');
 const { inspect } = require('util');
 const simpleParser = require('mailparser').simpleParser;
+let connection;
+
+const getUnreadMailsFromConnection = connection => {
+	logger.info(`getUnreadMailsFromConnection: Connection: ${connection}`);
+	return connection.openBox('INBOX').then(() => {
+		const searchCriteria = ['UNSEEN'];
+		const fetchOptions = {
+			bodies: ['HEADER', 'TEXT', '']
+		};
+		return connection.search(searchCriteria, fetchOptions).then(rawMails => {
+			let mailsPromises = [];
+			rawMails.forEach(function(item) {
+				const all = _.find(item.parts, { which: '' });
+				const uid = item.attributes.uid;
+				const idHeader = 'Imap-Id: ' + uid + '\r\n';
+				let mailPromise = simpleParser(idHeader + all.body).then(mail => {
+					return { ...mail, uid };
+				});
+
+				mailsPromises.push(mailPromise);
+			});
+			return Promise.all(mailsPromises);
+		});
+	});
+};
 
 const config = {
 	imap: {
@@ -18,30 +43,16 @@ const config = {
 	}
 };
 
-const getUnreadMails = () => {
-	return imaps.connect(config).then(connection => {
-		return connection.openBox('INBOX').then(() => {
-			const searchCriteria = ['UNSEEN'];
-			const fetchOptions = {
-				bodies: ['HEADER', 'TEXT', '']
-			};
-			return connection.search(searchCriteria, fetchOptions).then(rawMails => {
-				let mailsPromises = [];
-				rawMails.forEach(function(item) {
-					const all = _.find(item.parts, { which: '' });
-					const uid = item.attributes.uid;
-					const idHeader = 'Imap-Id: ' + uid + '\r\n';
-					let mailPromise = simpleParser(idHeader + all.body).then(mail => {
-						return { ...mail, uid };
-					});
-
-					mailsPromises.push(mailPromise);
-				});
-				return Promise.all(mailsPromises);
-			});
-		});
-	});
+const getConnection = onMailHandler => {
+	let localConfig = config;
+	if (onMailHandler) {
+		localConfig = Object.assign(localConfig, { onmail: onMailHandler });
+	}
+	return imaps.connect(localConfig);
 };
+
+const getUnreadMails = () =>
+	getConnection().then(connection => getUnreadMailsFromConnection(connection));
 
 const markMailAsRead = mail => {
 	logger.info(`markMailAsRead: Marking Mail as read: ${mail.subject}`);
@@ -59,4 +70,8 @@ const markMailAsRead = mail => {
 		});
 };
 
-module.exports = { getUnreadMails, markMailAsRead };
+module.exports = {
+	getUnreadMailsFromConnection,
+	markMailAsRead,
+	getConnection
+};

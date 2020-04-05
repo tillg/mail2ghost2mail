@@ -7,11 +7,11 @@ const path = require('path');
 const chalk = require('chalk');
 const logger = require('./config/logger')('app:index');
 
-const { processUnreadMails } = require('./mail2postController');
+const { launchMailProcessing } = require('./mail2postController');
 const { getPosts, getAuthors } = require('./services/post');
 
 //getAuthors();
-processUnreadMails();
+launchMailProcessing();
 
 const app = express();
 
