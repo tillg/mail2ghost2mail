@@ -4,28 +4,33 @@ const _ = require('lodash');
 const fs = require('fs');
 const { inspect } = require('util');
 const simpleParser = require('mailparser').simpleParser;
-let connection;
 
-const getUnreadMailsFromConnection = connection => {
-	logger.info(`getUnreadMailsFromConnection: Connection: ${connection}`);
+const getUnreadMailsFromConnection = (connection) => {
+	logger.info(`getUnreadMailsFromConnection: Retrieving unread emails...`);
 	return connection.openBox('INBOX').then(() => {
 		const searchCriteria = ['UNSEEN'];
 		const fetchOptions = {
-			bodies: ['HEADER', 'TEXT', '']
+			bodies: ['HEADER', 'TEXT', ''],
 		};
-		return connection.search(searchCriteria, fetchOptions).then(rawMails => {
+		return connection.search(searchCriteria, fetchOptions).then((rawMails) => {
 			let mailsPromises = [];
 			rawMails.forEach(function(item) {
 				const all = _.find(item.parts, { which: '' });
 				const uid = item.attributes.uid;
 				const idHeader = 'Imap-Id: ' + uid + '\r\n';
-				let mailPromise = simpleParser(idHeader + all.body).then(mail => {
+				let mailPromise = simpleParser(idHeader + all.body).then((mail) => {
 					return { ...mail, uid };
 				});
 
 				mailsPromises.push(mailPromise);
 			});
-			return Promise.all(mailsPromises);
+			return Promise.all(mailsPromises).then((mails) => {
+				const noOfMails = mails ? mails.length : 0;
+				logger.info(
+					`getUnreadMailsFromConnection: Finished retrieving emails: ${noOfMails}`
+				);
+				return mails;
+			});
 		});
 	});
 };
@@ -38,12 +43,12 @@ const config = {
 		port: process.env.IMAP_PORT,
 		tls: process.env.IMAP_TLS,
 		tlsOptions: {
-			rejectUnauthorized: false
-		}
-	}
+			rejectUnauthorized: false,
+		},
+	},
 };
 
-const getConnection = onMailHandler => {
+const getImapConnection = (onMailHandler) => {
 	let localConfig = config;
 	if (onMailHandler) {
 		localConfig = Object.assign(localConfig, { onmail: onMailHandler });
@@ -51,20 +56,17 @@ const getConnection = onMailHandler => {
 	return imaps.connect(localConfig);
 };
 
-const getUnreadMails = () =>
-	getConnection().then(connection => getUnreadMailsFromConnection(connection));
-
-const markMailAsRead = mail => {
+const markMailAsRead = (mail) => {
 	logger.info(`markMailAsRead: Marking Mail as read: ${mail.subject}`);
 
 	return imaps
 		.connect(config)
-		.then(connection => {
+		.then((connection) => {
 			return connection
 				.openBox('INBOX')
 				.then(() => connection.addFlags(mail.uid, 'SEEN'));
 		})
-		.catch(err => {
+		.catch((err) => {
 			logger.error(`markMailAsRead: Error when marking mail as unread: ${err}`);
 			throw err;
 		});
@@ -73,5 +75,5 @@ const markMailAsRead = mail => {
 module.exports = {
 	getUnreadMailsFromConnection,
 	markMailAsRead,
-	getConnection
+	getImapConnection,
 };

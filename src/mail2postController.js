@@ -2,23 +2,24 @@ const logger = require('./config/logger')('app:mail2postController');
 const {
 	getUnreadMailsFromConnection,
 	markMailAsRead,
-	getConnection,
+	getImapConnection
 } = require('./services/mail');
 const { transformToPost } = require('./services/mail2post');
 const { addPost } = require('./services/post');
-
 let connection;
+let processCount = 0;
+let connectionIsBusy = false;
 
-const processUnreadMail = (mail) => {
+const processUnreadMail = mail => {
 	const post = transformToPost(mail);
 	return addPost(post)
-		.catch((err) => {
+		.catch(err => {
 			logger.error(
 				`processUnreadMails: Error when adding post. Email will be marked as read nevertheless.`
 			);
 		})
 		.then(() => markMailAsRead(mail))
-		.catch((err) => {
+		.catch(err => {
 			logger.error(
 				`Error when marking email as read: ${email.subject}\n     Error: ${err}`
 			);
@@ -26,33 +27,80 @@ const processUnreadMail = (mail) => {
 };
 
 // read & process unread emails from inbox
-const processUnreadMailsFromConnection = (connection) => {
-	logger.info(`processUnreadMailsFromConnection: Processing unread Emails...`);
-	return getUnreadMailsFromConnection(connection).then((mails) => {
+const processUnreadMails = processId => {
+	logger.info(
+		`processUnreadMails[${processId}]: Entering. ConnectionIsBusy: ${connectionIsBusy}`
+	);
+	if (!connection) {
+		logger.warn(`processUnreadMails: No connection, aborting`);
+		return Promise.resolve();
+	} else if (connectionIsBusy) {
+		logger.warn(`processUnreadMails: connection busy, aborting`);
+		return Promise.resolve();
+	} else {
 		logger.info(
-			`processUnreadMailsFromConnection: Processing ${mails.length} emails.`
+			`processUnreadMails[${processId}]: Processing unread Emails...`
 		);
-		mails.forEach((mail) => processUnreadMail(mail));
-	});
+		connectionIsBusy = true;
+		return getUnreadMailsFromConnection(connection)
+			.then(mails => {
+				let msg;
+				if (mails) {
+					msg = `processUnreadMails[${processId}]: Processing ${mails.length} emails.`;
+				} else {
+					msg = `processUnreadMails[${processId}]: No unread mails, nothing to do.`;
+				}
+				logger.info(msg);
+				let mailProcessingPromises = [];
+				if (mails)
+					mails.forEach(mail => {
+						mailProcessingPromises.push(processUnreadMail(mail));
+					});
+				return Promise.all(mailProcessingPromises);
+			})
+			.catch(err => {
+				logger.warn(`processUnreadMails[${processId}]: ${err}`);
+			})
+			.then(() => {
+				connectionIsBusy = false;
+				logger.info(
+					`processUnreadMails[${processId}]: Connection set to not busy anymore.`
+				);
+			});
+	}
+};
+
+const imapEventHandler = num => {
+	logger.info(`imapEventHandler: onMail fired, No of affected mails: ${num}`);
+	if (!connection) {
+		logger.warn(`imapEventHandler: Connection not set yet`);
+	} else if (num == 0) {
+		logger.info(`imapEventHandler: Fired, but 0 mails affected`);
+	} else if (connectionIsBusy) {
+		logger.info(`imapEventHandler: Fired but connection is busy. Aborting.`);
+	} else {
+		processCount++;
+		const myProcessId = 'imapEvent:' + processCount;
+		processUnreadMails(myProcessId).then(() => {
+			logger.info(`imapEventHandler[${myProcessId}]: Finished.`);
+		});
+	}
 };
 
 const launchMailProcessing = () => {
-	getConnection((num) => {
-		logger.info(
-			`launchMailProcessing: Received a notification. No of mails: ${num}`
-		);
-		processUnreadMailsFromConnection(connection);
-	})
-		.then((localConnection) => {
+	getImapConnection(imapEventHandler)
+		.then(localConnection => {
+			connection = localConnection;
 			logger.info(
 				`launchMailProcessing: Set connection, waiting for incoming mails.`
 			);
-			connection = localConnection;
-			return localConnection;
+			//processUnreadMailsFromConnection(localConnection);
 		})
-		.then((connection) => processUnreadMailsFromConnection(connection));
+		.then(() => {
+			processCount++;
+			const myProcessId = 'launchMailProcessing:' + processCount;
+			return processUnreadMails(myProcessId);
+		});
 };
-
-// Wait for new, incoming mails
 
 module.exports = { launchMailProcessing };
