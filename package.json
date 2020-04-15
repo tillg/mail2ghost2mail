@@ -5,7 +5,7 @@
 	"main": "app.js",
 	"scripts": {
 		"start": "nodemon src/index.js",
-		"test": "mocha test --exit",
+		"test": "env NODE_CONFIG_DIR=./test/config mocha test --exit",
 		"lint": "eslint .",
 		"lint:write": "eslint --fix .",
 		"prettier": "prettier --list-different './**/*.js'",
