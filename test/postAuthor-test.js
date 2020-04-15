@@ -14,6 +14,22 @@ describe('isValidEmailAddress', function() {
 				isValidEmailAddress('synoname1@gmail.com', { postAuthors }),
 				true
 			);
+		});
+		it('should return TRUE when checking an email that is in the list, even if Upper/Lowercase mismatched.', function() {
+			assert.equal(
+				isValidEmailAddress('synoname1@gmail.COM', { postAuthors }),
+				true
+			);
+			assert.equal(
+				isValidEmailAddress('synoname1@whatever.com', { postAuthors }),
+				true
+			);
+		});
+		it('should return TRUE when checking an email that is in the list, even with leading/trailing whitespaces.', function() {
+			assert.equal(
+				isValidEmailAddress('synoname1@gmail.COM ', { postAuthors }),
+				true
+			);
 			assert.equal(
 				isValidEmailAddress('till@whatever.com', { postAuthors }),
 				true

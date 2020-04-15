@@ -1,7 +1,7 @@
 {
 	"postAuthors": {
 		"author1@whatever.com": {
-			"emailAddresses": ["synoname1@gmail.com", "synoname1@googlemail.com", "synoname1@whatever.com", "till@whatever.com"]
+			"emailAddresses": ["synoname1@gmail.com", "synoname1@googlemail.com", "synoname1@WhatEver.com", "till@whatever.com "]
 		},
 		"author2@gmail.com": {
 			"emailAddresses": ["author2@gmail.com"]
