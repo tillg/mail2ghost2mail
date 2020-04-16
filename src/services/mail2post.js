@@ -1,22 +1,12 @@
 const config = require('config');
 const logger = require('../config/logger')('app:mail2post');
-
-const validAuthorEmailAddresses = () => {
-	let emailAddresses = [];
-	const validAuthors = config.get('validAuthors');
-	Object.keys(validAuthors).map((ghostAuthor) => {
-		logger.info(
-			`Merging author ${ghostAuthor} with email addresses ${validAuthors[ghostAuthor].emailAddresses}`
-		);
-		emailAddresses = emailAddresses.concat(
-			validAuthors[ghostAuthor].emailAddresses
-		);
-	});
-	logger.info(
-		`validAuthorEmailAddresses: Created validAuthorsEmailAddresses:${emailAddresses}`
-	);
-	return emailAddresses;
-};
+const {
+	isValidEmailAddress,
+	getPostAuthorForEmail,
+	initialize,
+} = require('./postAuthor');
+const postAuthors = config.get('postAuthors');
+initialize({ postAuthors });
 
 const transformToPost = (mail) => {
 	const emailAdressOfSender = [mail.from.value[0].address] + '';
@@ -24,17 +14,17 @@ const transformToPost = (mail) => {
 		`transformToPost: Processing email of sender ${emailAdressOfSender}. Email is of type ${typeof emailAdressOfSender}`
 	);
 
-	const candidateAuthor = emailAdressOfSender.toLowerCase();
-	if (!validAuthorEmailAddresses().includes(candidateAuthor)) {
-		const errStr = `transformToPost: Author ${candidateAuthor} not valid, post will not be created.\n   Valid authors are ${validAuthors}`;
+	if (!isValidEmailAddress(emailAdressOfSender)) {
+		const errStr = `transformToPost: Author ${candidateAuthor} not valid, post will not be created.`;
 		logger.error(errStr);
 		return null;
 	}
+	const postAuthor = getPostAuthorForEmail(emailAdressOfSender);
 	const post = {
 		status: 'published',
 		published_at: mail.date,
 		title: mail.subject,
-		authors: [mail.from.value[0].address],
+		authors: [postAuthor],
 		html: mail.html ? mail.html : mail.textAsHtml,
 	};
 	return post;

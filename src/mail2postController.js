@@ -2,7 +2,7 @@ const logger = require('./config/logger')('app:mail2postController');
 const {
 	getUnreadMailsFromConnection,
 	markMailAsRead,
-	getImapConnection
+	getImapConnection,
 } = require('./services/mail');
 const { transformToPost } = require('./services/mail2post');
 const { addPost } = require('./services/post');
@@ -10,16 +10,22 @@ let connection;
 let processCount = 0;
 let connectionIsBusy = false;
 
-const processUnreadMail = mail => {
+const processUnreadMail = (mail, processId) => {
 	const post = transformToPost(mail);
 	return addPost(post)
-		.catch(err => {
+		.catch((err) => {
 			logger.error(
-				`processUnreadMail[${processId}]: Error when adding post. Email will be marked as read nevertheless.`
+				`processUnreadMail[${processId}]: Error when adding post: ${JSON.stringify(
+					err
+				)}\n Post: ${JSON.stringify(
+					post,
+					null,
+					4
+				)}\n Email will be marked as read nevertheless.`
 			);
 		})
 		.then(() => markMailAsRead(mail))
-		.catch(err => {
+		.catch((err) => {
 			logger.error(
 				`processUnreadMail[${processId}]: Error when marking email as read: ${email.subject}\n     Error: ${err}`
 			);
@@ -27,7 +33,7 @@ const processUnreadMail = mail => {
 };
 
 // read & process unread emails from inbox
-const processUnreadMails = processId => {
+const processUnreadMails = (processId) => {
 	if (!connection) {
 		logger.warn(`processUnreadMails[${processId}]: No connection, aborting`);
 		return Promise.resolve();
@@ -40,7 +46,7 @@ const processUnreadMails = processId => {
 		);
 		connectionIsBusy = true;
 		return getUnreadMailsFromConnection(connection)
-			.then(mails => {
+			.then((mails) => {
 				let msg;
 				if (mails) {
 					msg = `processUnreadMails[${processId}]: Loaded ${mails.length} unread emails to process.`;
@@ -50,12 +56,12 @@ const processUnreadMails = processId => {
 				logger.info(msg);
 				let mailProcessingPromises = [];
 				if (mails)
-					mails.forEach(mail => {
+					mails.forEach((mail) => {
 						mailProcessingPromises.push(processUnreadMail(mail, processId));
 					});
 				return Promise.all(mailProcessingPromises);
 			})
-			.catch(err => {
+			.catch((err) => {
 				logger.warn(`processUnreadMails[${processId}]: ${err}`);
 			})
 			.then(() => {
@@ -67,7 +73,7 @@ const processUnreadMails = processId => {
 	}
 };
 
-const imapEventHandler = num => {
+const imapEventHandler = (num) => {
 	logger.info(`imapEventHandler: onMail fired, No of affected mails: ${num}`);
 	processCount++;
 	const myProcessId = 'imapEvent:' + processCount;
@@ -76,7 +82,7 @@ const imapEventHandler = num => {
 
 const launchMailProcessing = () => {
 	getImapConnection(imapEventHandler)
-		.then(localConnection => {
+		.then((localConnection) => {
 			connection = localConnection;
 			logger.info(
 				`launchMailProcessing: Set connection, waiting for incoming mails.`

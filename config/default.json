@@ -1,10 +1,10 @@
 {
-	"validAuthors": {
+	"postAuthors": {
 		"till.gartner@gmail.com": {
 			"emailAddresses": ["till.gartner@gmail.com", "till.gartner@googlemail.com", "till.gartner@mgm-tp.com", "till@mgm-tp.com"]
 		},
-		"hwhinrichs@gmail.com": {
-			"emailAddresses": ["hwhinrichs@gmail.com"]
+		"money.grtnr@gmail.com": {
+			"emailAddresses": ["money.grtnr@gmail.com"]
 		}
 	}
 }
