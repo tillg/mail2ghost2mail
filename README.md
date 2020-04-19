@@ -2,6 +2,8 @@
 
 Interfacing Ghost with Emails: Sending out emails when new posts are published and creating new posts by sending emails.
 
+**Note** Currently only one direction is implemented: By sending emails you can create blog posts.
+
 ## How to run it
 
 Prerequisites:
@@ -23,9 +25,9 @@ Of course it will need some configuration 😀 ...see below...
 
 `mail2ghost2mail` has a couple of confguration areas and options:
 
-### Access secrets
+### Secrets
 
-In order to read/write emails and ghost posts it needs acess to those 2 systems. This information is held in the `.env` file. You can create and edit it like so:
+In order to read/write emails and ghost posts it needs access to those 2 systems. This information is held in the `.env` file. You can create and edit it like so:
 
 ```shell
 cd src
@@ -34,7 +36,7 @@ cp sample.env .env
 
 Then edit the file `.env` and enter your configuration for accessing the email account as well as the Ghost API.
 
-### Email addresses --> ghost author
+### Email addresses <==> ghost author
 
 When creating a new blog post based on an incoming email we need to set the author. This is based on a mapping between email senders and ghost authors. This way a blog author can send from multiple email addresses (i.e. his office and private email account).
 
@@ -42,14 +44,12 @@ This mapping is described in the `config/default.json` file. The file structure 
 
 ```json
 {
-	"validAuthors": {
-		"till": {
-			"emailAddresses": ["till.gartner@gmail.com", "till.gartner@googlemail.com", "till.gartner@mgm-tp.com", "till@mgm-tp.com"],
-			"ghostUser": "till.gartner @gmail.com "
+	"postAuthors": {
+		"adam@something.com": {
+			"emailAddresses": ["adam@gmail.com", "adam@something.com", "adam@work-domain.com"]
 		},
-		"henry": {
-			"emailAddresses": ["hwhinrichs@gmail.com"],
-			"ghostUser": "hwhinrichs@gmail.com"
+		"joe@gmail.com": {
+			"emailAddresses": ["joe@gmail.com"]
 		}
 	}
 }
@@ -59,5 +59,6 @@ This mapping is described in the `config/default.json` file. The file structure 
 
 Things that need to be done:
 
-* Mapping email addresses of senders to author IDs in Ghost
+* Test the blog creation by email with more diverse content. I.e. sending an email with inline pics, youtube links etc.
+* Have more tests...
 * Sending out emails when new blog posts are created
