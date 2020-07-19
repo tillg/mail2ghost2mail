@@ -38,7 +38,7 @@
 		"express": "4.17.1",
 		"imap": "0.8.19",
 		"imap-simple": "4.3.0",
-		"lodash": "4.17.15",
+		"lodash": "4.17.19",
 		"mailparser": "2.7.7",
 		"prettier": "1.19.1",
 		"winston": "3.2.1"
